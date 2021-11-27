@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz</title>
+</head>
+<body>
+    <h2>3316 Lab 3 Quiz</h2>
+    <p> </p>
+    <!-- //on click of the link, getQuestion() -->
+    <a href='javascript:getQuestions()'> Start the quiz</a>
+    <p> </p>
+    <!-- //json file -->
+    <div id='questions'></div>
+
+</body>
+
+<script>
+    function getQuestions()
+    {   
+        let xReq = new XMLHttpRequest();    //create xReq object
+        xReq.onreadystatechange = displayQuestions;
+        xReq.open('GET', '/quizQuestions', true);  //get quizQuestions
+        xReq.send();
+    }
+
+    function displayQuestions()     //used^^ when there is a state change, displayQuestion() will be called
+    {
+        if (this.readyState == 4 && this.status == 200)
+        {
+            let questionDiv = document.getElementById('questions'); //get the question file
+            let questionList = JSON.parse(this.responseText); //parse the json file
+            let content ='';
+            let questionCount= 0;
+
+
+            for (question of questionList) //loop throught the questionList to display all the question
+            {
+                content += '<div>';
+                content += question.stem; //get stem from the json file and display it as content
+                content += '<br>'
+                
+                for(var i= 0; i < question.options.length; i++){
+                    choice = question.options[i] //the options
+                    //radio is used for one choice MCQ
+                    content += `<input type="radio" onClick="checkq(name, value)" id= ${String(questionCount) + String(choice)} name=${questionCount} value=${i}>` //onClick call checkq
+                    content += `<label for= ${String(questionCount) + String(choice)}>${choice}</label><br>`
+                }
+                content += '</div>'
+                content += `<div id=${questionCount}></div>`
+                content += '<br>'
+                questionCount++;
+            }
+
+            //update and display the final score
+            content += `<input type= "submit" value="Submit" onClick="getScore()">` 
+            content += `<div id='score'></div>`
+            questionDiv.innerHTML = content;
+        }
+    }
+    //called on click of a radio button option
+    function checkq(name, value){
+        let xReq = new XMLHttpRequest();
+        xReq.onreadystatechange= getFeedback; //everytime when the radio button is clicked(state change), it will call getFeedback()
+        xReq.open('GET', '/checkq?q=' + name + '&ans=' + value, true); //get question and answer
+        xReq.send();
+    }
+
+    function getFeedback(){ //will be excuted in checkq
+        if (this.readyState == 4 && this.status == 200)
+        {
+            let correct= JSON.parse(this.responseText);
+            let questionDiv= document.getElementById(correct[0]);
+            if (correct[1]){
+                content = "Correct!"
+            }
+            else{
+                content= "Oops! Try again!"
+            }
+            questionDiv.innerHTML = content;
+        }
+    }
+    function getScore(){  //when user lick on submit button, getScore will be excuted to send the final score
+        let xReq = new XMLHttpRequest();
+        xReq.onreadystatechange= displayScore; //on state change displayScore()
+        xReq.open('GET', '/getScore', true); //get request
+        xReq.send();
+    }
+
+      function displayScore(){  //displayScore will be excuted in the getScore function
+        if (this.readyState == 4 && this.status == 200){
+            let scoreDiv= document.getElementById('score');
+            let score= JSON.parse(this.responseText);
+            scoreDiv.innerHTML= `<h1> Your Score: ${score}</h1>`
+        }
+    }
+</script>
+</html>
